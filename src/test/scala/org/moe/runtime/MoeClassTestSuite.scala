@@ -2,8 +2,9 @@ package org.moe.runtime
 
 import org.scalatest.FunSuite
 import org.scalatest.BeforeAndAfter
+import org.scalatest.matchers.ShouldMatchers
 
-class MoeClassTestSuite extends FunSuite with BeforeAndAfter {
+class MoeClassTestSuite extends FunSuite with BeforeAndAfter with ShouldMatchers {
 
   test("... test MRO") {
     val Foo = new MoeClass("Foo")
@@ -43,13 +44,13 @@ class MoeClassTestSuite extends FunSuite with BeforeAndAfter {
 
   test("... test method resolution") {
     val parent = new MoeClass(
-      name = "ParentClass", 
-      version = Some("0.01"), 
+      name = "ParentClass",
+      version = Some("0.01"),
       authority = Some("cpan:STEVAN")
     )
     val child = new MoeClass(
-      name = "ChildClass", 
-      version = Some("0.01"), 
+      name = "ChildClass",
+      version = Some("0.01"),
       authority = Some("cpan:STEVAN"),
       superclass = Some(parent)
     )
@@ -63,35 +64,39 @@ class MoeClassTestSuite extends FunSuite with BeforeAndAfter {
     assert(parent.hasMethod("ident"))
     assert(child.hasMethod("ident"))
 
-    assert(parent.getMethod("ident") === method)
-    assert(child.getMethod("ident") === method)
+    parent.getMethod("ident") should be (Some(method))
+    child.getMethod("ident") should be (Some(method))
 
     assert(dad.callMethod("ident") === dad)
     assert(son.callMethod("ident") === son)
+
+    intercept[Runtime.Errors.MethodNotFound] {
+      son.callMethod("foobar", List())
+    }
   }
 
   test("... test attribute resolution") {
     val parent = new MoeClass(
-      name = "ParentClass", 
-      version = Some("0.01"), 
+      name = "ParentClass",
+      version = Some("0.01"),
       authority = Some("cpan:STEVAN")
     )
     val child = new MoeClass(
-      name = "ChildClass", 
-      version = Some("0.01"), 
+      name = "ChildClass",
+      version = Some("0.01"),
       authority = Some("cpan:STEVAN"),
       superclass = Some(parent)
     )
 
     val default = new MoeObject()
-    val attr = new MoeAttribute("name", default)
+    val attr = new MoeAttribute("name", Some(default))
     parent.addAttribute(attr)
 
     assert(parent.hasAttribute("name"))
     assert(child.hasAttribute("name"))
 
-    assert(parent.getAttribute("name") === attr)
-    assert(child.getAttribute("name") === attr)
+    parent.getAttribute("name") should be (Some(attr))
+    child.getAttribute("name") should be (Some(attr))
   }
 
 }

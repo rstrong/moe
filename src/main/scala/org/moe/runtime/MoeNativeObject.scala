@@ -1,8 +1,11 @@
 package org.moe.runtime
 
-abstract class MoeNativeObject[A] (private val value: A) extends MoeObject {
-  def this(v: A, c: Option[MoeClass]) = { this(v); setAssociatedClass(c) }
-  def getNativeValue: A = value.asInstanceOf[A]
+abstract class MoeNativeObject[A] (
+  private val value: A,
+  private var associatedClass: Option[MoeClass] = None)
+  extends MoeObject(associatedClass) {
+
+  def getNativeValue: A = value
 }
 
 // NOTE:

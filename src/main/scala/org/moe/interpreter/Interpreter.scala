@@ -14,13 +14,19 @@ object Interpreter {
     // containers
 
     case CompilationUnitNode(body) => eval(env, body)
-    case ScopeNode(body) => eval(new MoeEnvironment(env), body)
+    case ScopeNode(body) => eval(new MoeEnvironment(Some(env)), body)
     case StatementsNode(nodes) => {
-      var result: MoeObject = Runtime.NativeObjects.getUndef
-      for (node <- nodes) {
-        result = eval(env, node)
-      }
-      result
+
+      // foldLeft iterates over each node (left to right) in the list, executing
+      // a function.  That function is given two arguments: the result of the
+      // previous iteration and the next item in the list.  It returns the result
+      // of the final iteration. Many times it used to accumulate, such as
+      // finding a sum of a list.  In thise case we don't acculate, we just
+      // return the result of each eval.  Therefore the final result will be
+      // the result of the last eval.
+      nodes.foldLeft[MoeObject](Runtime.NativeObjects.getUndef)(
+        (_, node) => eval(env, node)
+      )
     }
 
     // literals
@@ -28,9 +34,12 @@ object Interpreter {
     case IntLiteralNode(value) => Runtime.NativeObjects.getInt(value)
     case FloatLiteralNode(value) => Runtime.NativeObjects.getFloat(value)
     case StringLiteralNode(value) => Runtime.NativeObjects.getString(value)
-    case BooleanLiteralNode(value) => value match {
-      case true  => Runtime.NativeObjects.getTrue
-      case false => Runtime.NativeObjects.getFalse
+    case BooleanLiteralNode(value) => {
+      if(value) {
+        Runtime.NativeObjects.getTrue
+      } else {
+        Runtime.NativeObjects.getFalse
+      }
     }
 
     case UndefLiteralNode() => Runtime.NativeObjects.getUndef
@@ -38,10 +47,9 @@ object Interpreter {
     case ClassLiteralNode() => env.getCurrentClass
     case SuperLiteralNode() => {
       val klass = env.getCurrentClass
-      klass.getSuperclass match {
-        case Some(s) => s
-        case _ => throw new Runtime.Errors.SuperclassNotFound(klass.getName)
-      }
+      klass.getSuperclass.getOrElse(
+        throw new Runtime.Errors.SuperclassNotFound(klass.getName)
+      )
     }
 
     case ArrayLiteralNode(values) => {
@@ -74,9 +82,10 @@ object Interpreter {
     case DecrementNode(receiver) => stub
 
     case NotNode(receiver) => {
-      eval(env, receiver).isTrue match {
-        case true  => Runtime.NativeObjects.getFalse
-        case false => Runtime.NativeObjects.getTrue
+      if(eval(env, receiver).isTrue) {
+        Runtime.NativeObjects.getFalse
+      } else {
+        Runtime.NativeObjects.getTrue
       }
     }
 
@@ -84,17 +93,19 @@ object Interpreter {
 
     case AndNode(lhs, rhs) => {
       val left_result = eval(env, lhs)
-      left_result.isTrue match {
-        case true  => eval(env, rhs)
-        case false => left_result
+      if(left_result.isTrue) {
+        eval(env, rhs)
+      } else {
+        left_result
       }
     }
 
     case OrNode(lhs, rhs) => {
       val left_result = eval(env, lhs)
-      left_result.isTrue match {
-        case true  => left_result
-        case false => eval(env, rhs)
+      if(left_result.isTrue) {
+        left_result
+      } else {
+        eval(env, rhs)
       }
     }
 
@@ -127,7 +138,7 @@ object Interpreter {
     // statements
 
     case IfNode(if_condition, if_body) => {
-      eval( env,
+      eval(env,
         IfElseNode(
           if_condition,
           if_body,
@@ -137,9 +148,10 @@ object Interpreter {
     }
 
     case IfElseNode(if_condition, if_body, else_body) => {
-      eval( env, if_condition ).isTrue match {
-        case true  => eval(env, if_body)
-        case false => eval(env, else_body)
+      if(eval(env, if_condition).isTrue) {
+        eval(env, if_body)
+      } else {
+        eval(env, else_body)
       }
     }
 
@@ -157,7 +169,7 @@ object Interpreter {
     }
 
     case IfElsifElseNode(if_condition, if_body, elsif_condition, elsif_body, else_body) => {
-      eval( env,
+      eval(env,
         IfElseNode(
           if_condition,
           if_body,
@@ -171,7 +183,7 @@ object Interpreter {
     }
 
     case UnlessNode(unless_condition, unless_body) => {
-      eval( env,
+      eval(env,
         UnlessElseNode(
           unless_condition,
           unless_body,
@@ -180,9 +192,9 @@ object Interpreter {
       )
     }
     case UnlessElseNode(unless_condition, unless_body, else_body) => {
-      eval( env,
+      eval(env,
         IfElseNode(
-          NotNode( unless_condition ),
+          NotNode(unless_condition),
           unless_body,
           else_body
         )

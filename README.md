@@ -87,7 +87,7 @@ but this should be sufficient for now.
 
 Here is what you need installed to get started.
 
-* Scala 2.10.0
+* Java (preferably 7)
 * SBT (Simple Build Tool, get it from
   http://www.scala-sbt.org/release/docs/Getting-Started/Setup.html)
 
@@ -104,4 +104,10 @@ pull requests.
 ### What can I do?
 
 Refer to the STATUS document for information regarding this.
+
+## License
+
+This software is Copyright (c) 2013 Infinity Interactive, Inc.
+and licensed under the MIT license. See the LICENSE file for 
+more details.
 
